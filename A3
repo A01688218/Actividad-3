@@ -54,6 +54,10 @@ plot_ly(x=colnames(mydata.coeff), y=rownames(mydata.coeff), z = mydata.coeff, ty
 
 
 
+################APLICACIÓN DEL PCA AL DATA SET################
+pcs <- prcomp(na.omit(df[,-c(1)]))
+summary(pcs)
 
+#Los primeros 5 componentes representan más del 97% de la variación total asociada con las 20 variables originales. Esto sugiere que podemos capturar la mayor parte de la variabilidad en los datos con el 25% de las dimensiones originales en los datos. De hecho, los tres primeros componentes principales captan por sí solos el 92.23% de la variación total. Sin embargo, estos resultados están influenciados por las escalas de las variables.
 
 
