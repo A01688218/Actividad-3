@@ -6,7 +6,7 @@ library("plotly")
 
 
 #Importando la data
-df <- read.csv('C:\\Users\\eduar\\OneDrive - Instituto Tecnologico y de Estudios Superiores de Monterrey\\Tec Monterrey Adm TI M\\4. Analisis y minería de datos para la toma de desiciones\\A3\\Absenteeism_at_work.csv', 
+df <- read.csv('...\\A3\\Absenteeism_at_work.csv', 
                header = TRUE,  sep=";")
 #Existen nulos?
 sum(is.na(df))
