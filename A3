@@ -1,0 +1,53 @@
+library("Hmisc")
+library("corrplot")
+library("corrplot")
+library("viridis")
+library("plotly")
+
+
+#Importando la data
+df <- read.csv('C:\\Users\\eduar\\OneDrive - Instituto Tecnologico y de Estudios Superiores de Monterrey\\Tec Monterrey Adm TI M\\4. Analisis y minería de datos para la toma de desiciones\\A3\\Absenteeism_at_work.csv', 
+               header = TRUE,  sep=";")
+#Existen nulos?
+sum(is.na(df))
+
+#Existe una variable num que ha de referir a un tiempo(Work.load.Average.day), 
+#No debe  de suponer ningun problema
+#El resto de las variables son int
+#varias variables son dummys 
+
+
+#Resumen de datos
+sumary.df <- as.data.frame(apply(df,2,summary))
+sumary.df
+
+#Matriz de correlación
+##tradicional
+round(cor(df),2)
+#con libreria
+mydata.rcorr = rcorr(as.matrix(mydata)) 
+mydata.coeff = mydata.rcorr$r #correlación
+mydata.p = mydata.rcorr$P   #valor p
+
+#Matriz de correlación con corrplot
+corrplot(mydata.coeff, tl.col = "brown", tl.srt = 55, bg = "White",
+         title = "\n\n Grafico de correlación data del doc",
+         type = "full")
+
+#heatmap predeterminado (con correlación)
+heatmap(x = df, col = turbo(n=3), symm = TRUE, margins =c(8,8), cexCol = .70)
+#Heatmap Plotty (con correlación)
+plot_ly(x=colnames(mydata.coeff), y=rownames(mydata.coeff), z = mydata.coeff, type = "heatmap")
+#de este analisis podemos identificar correlaciones considerables, por ejemplo
+
+#+body mass index vs weight .90
+#+service time vs body mass index 0.4997
+#-Disciplinary failure vs reasons for absence -0.5450
+
+
+
+
+
+
+
+
