@@ -1,7 +1,7 @@
-# Actividad 3
+<h1>Actividad 3</h1>
 
 
-## Librerias usadas
+<h2> Librerias usadas</h2>
 library("Hmisc")
 library("corrplot")
 library("corrplot")
