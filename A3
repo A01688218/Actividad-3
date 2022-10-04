@@ -1,4 +1,7 @@
-################LIRERIAS################
+# Actividad 3
+
+
+## Librerias usadas
 library("Hmisc")
 library("corrplot")
 library("corrplot")
