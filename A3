@@ -1,63 +1,385 @@
-###############################Actividad 3##########################
+---
+title: "ACTIVIDAD 3"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: columns
+    vertical_layout: fill
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(forcats)
+library(dplyr)
+library(ggplot2)
+library(plyr)
+library(DataExplorer)
+library(ggthemes)
+library(grid)
+library(gridExtra)
+library(factoextra)
+library(FactoMineR)
+library(corrplot)
+library(viridis)
+library(plotly)
+library("Hmisc") #valores-p
+library(DT) #tablas chingonas
+library(scales)  # para porcentajes
+
+```
+
+```{r results = FALSE}
+#Importando la data
+df <- read.csv('C:\\Users\\eduar\\OneDrive - Instituto Tecnologico y de Estudios Superiores de Monterrey\\Tec Monterrey Adm TI M\\4. Analisis y minería de datos para la toma de desiciones\\A3\\Absenteeism_at_work.csv', 
+               header = TRUE,  sep=";", na.strings = c('NA'))
+#Matriz de correlación
+##tradicional
+round(cor(df),2)
+#con libreria
+mydata.rcorr = rcorr(as.matrix(df)) 
+mydata.coeff = mydata.rcorr$r #correlación
+mydata.p = mydata.rcorr$P   #valor p
+
+```
 
 
-#################Librerias usadas#################
-library("Hmisc")
-library("corrplot")
-library("corrplot")
-library("viridis")
-library("plotly")
 
 
-#################Importando la data################
-df <- read.csv('...\\A3\\Absenteeism_at_work.csv', 
-               header = TRUE,  sep=";")
+# Resumen estadístico
+## Column 1 {data-width=500 .tabset}
 
 
 
-################Analisis preliminar################
-###Existen nulos?
+### Resumen inicial
+
+```{r}
+
+str(df) %>%
+  knitr::kable()
+
+```
+<div class="box">
+    Algunas de las variables realmente son categoricas, por ejemplo. Month.of.absence = none, jan, feb..., day of the week = monday, tuesday.... por lo que procederemos a mutarlas en factores, es decir variables categoricas con niveles.
+</div>
+
+
+### Resumen 2
+```{r}
+col <- c(2:5,12:17)
+datos <- df
+datos[col] <- lapply(datos[col], factor)
+
+datos <- datos %>%
+  mutate(Reason.for.absence = fct_recode(Reason.for.absence,'infectious,parasitic diseases'='0',
+                              'Neoplasms'='1','Diseases of the blood'='2','Endocrine and metabolic diseases'='3','Mental and behavioural disorders'='4', 
+                              'Diseases of the nervous system'='5','Diseases of the eye and adnexa'='6','Diseases of the ear and mastoid process'='7',
+                              'Diseases of the circulatory system'='8','Diseases of the respiratory system'='9','Diseases of the digestive system'='10', 
+                              'Diseases of the skin and subcutaneous tissue'='11','Diseases of the musculoskeletal system and connective tissue'='12', 
+                              'Diseases of the genitourinary system'='13','Pregnancy, childbirth and the puerperium'='14','Certain conditions originating in the perinatal'='15', 
+                              'Congenital malformations, deformations and chromosomal abnormalities'= '16','Symptoms, signs and abnormal clinical  findings'='17',
+                              'Injury, poisoning and certain other consequences of external causes'= '18','causes of morbidity and mortality'='19',
+                              'Factors influencing health status and contact with health services'='21','patient follow-up'='22','medical consultation'='23','blood donation'='24',
+                              'laboratory examination'='25','unjustified absence'='26','physiotherapy'='27','dental consultation'='28'))
+
+
+datos <- datos %>%
+  mutate(Month.of.absence= fct_recode(Month.of.absence,'None'='0','Jan'='1','Feb'='2','Mar'='3','Apr'='4','May'='5',
+                                    'Jun'='6','Jul'='7','Aug'='8','Sep'='9','Oct'='10','Nov'='11','Dec'='12') )
+datos <- datos %>%
+  mutate(Seasons= fct_recode(Seasons,'summer'='1','autumn'='2','winter'='3','spring'='4'))
+
+datos <- datos %>%
+  mutate(Education = fct_recode(Education,'highschool'='1','graduate'='2','postgraduate'='3','master& doctrate'='4'))
+
+datos <- datos %>%
+  mutate(Diciplinary.failture= fct_recode(Disciplinary.failure,'No'='0','Yes'='1'))
+datos <- datos %>%
+  mutate(Social.drinker= fct_recode(Social.drinker,'No'='0','Yes'='1'))
+datos <- datos %>%
+  mutate(Social.smoker= fct_recode(Social.smoker,'No'='0','Yes'='1'))
+datos <- datos %>%
+  mutate(Day.of.the.week = fct_recode(Day.of.the.week,"Monday"="2","Tuesday"="3","Wednesday"="4","Thursday"="5","Friday"="6"))
+
+
+str(datos) %>%
+  knitr::kable()
+
+
+```
+
+
+```{r results = FALSE}
+ 
+```
+
+
+## Column 2 {data-width=500}
+### Existen nulos?
+<div class="box">
+    Aplicando "sum(is.na(df)) sabremos si existen nulos
+</div>
+```{r}
+
 sum(is.na(df))
-#Como se puede ver no existen nulos dentro de la data
+
+```
+<div class="box">
+    De esta forma sabemos que no debemos de tratar los datos para rellenar celdas vacias.
+</div>
+
+### Resumen estadístico
+
+```{r}
+
+
 #Existe una variable num que ha de referir a un tiempo(Work.load.Average.day), 
 #No debe  de suponer ningun problema
 #El resto de las variables son int
 #varias variables son dummys 
 
-###Resumen de datos
-sumary.df <- as.data.frame(apply(df,2,summary))
-sumary.df
+#Estadísticos de las variables
+statss.df <- as.data.frame(apply(df,2,summary))
 
-################Primeras visualizaciones (parte del analisis)################
-#Matriz de correlación tradicional
-round(cor(df),2)
-#con libreria
-mydata.rcorr = rcorr(as.matrix(mydata)) 
-mydata.coeff = mydata.rcorr$r #correlación
-mydata.p = mydata.rcorr$P   #valor p
+datatable(statss.df, class = 'cell-border stripe')%>%
+  formatRound(
+    columns = 1:21,
+    digits = 3
+)
+
+```
+
+
+# Graficos
+
+## Column 1 {data-width=500 .tabset}
+
+### Grafico de correlación
+
+```{r}
+
 #Matriz de correlación con corrplot
-corrplot(mydata.coeff, tl.col = "brown", tl.srt = 55, bg = "White",
-         title = "\n\n Grafico de correlación data del doc",
-         type = "full")
-#heatmap predeterminado (con correlación)
-heatmap(x = df, col = turbo(n=3), symm = TRUE, margins =c(8,8), cexCol = .70)
-#Heatmap Plotty (con correlación)
+
+corrplot(mydata.coeff, 
+         order = 'AOE',
+         col = COL2('RdYlBu'),
+         type = 'lower', 
+         tl.col = "black", 
+         cl.ratio = 0.2,
+         tl.srt = 50, 
+         bg = "White", 
+         tl.cex = 0.80,diag = FALSE
+         )
+```
+
+### Heatpoint
+
+```{r}
+
 plot_ly(x=colnames(mydata.coeff), y=rownames(mydata.coeff), z = mydata.coeff, type = "heatmap")
 
-################Interpretación del análisis de visualización################
-#de este analisis podemos identificar correlaciones considerables, por ejemplo
-#+body mass index vs weight .90
-#+service time vs body mass index 0.4997
-#-Disciplinary failure vs reasons for absence -0.5450
+```
+
+### Explicación
+<div class="box">
+De este analisis podemos identificar correlaciones considerables, por ejemplo
+
++body mass index vs weight 0.90
+
++service time vs body mass index 0.4997
+
++service time vs age 0.671
+
+-Disciplinary failure vs reasons for absence -0.5450
+
+</div>
+
+### índice de masa corporal vs peso
+```{r}
+P1 <- datos %>%
+  group_by(Body.mass.index)%>%
+  ggplot(mapping = aes(x= Body.mass.index,y= Weight)) + 
+  geom_point()+ geom_smooth(method = 'lm') + 
+  labs(title='Índice de masa corporal vs peso',x='Índice de masa corporal',y='Peso')
+
+P1 %>% plotly::ggplotly()
+```
+
+### Tiempo de servicio vs índice de masa corporal
+```{r}
+P2 <- datos %>%
+  group_by(Service.time)%>%
+  ggplot(mapping = aes(x= Service.time,y= Body.mass.index)) + 
+  geom_point()+ geom_smooth(method = 'lm') + 
+  labs(title='Tiempo de servicio vs índice de masa corporal',x='Tiempo de servicio',y='Índice de masa corporal')
+
+P2 %>% plotly::ggplotly()
+```
+
+
+### Tiempo de servicio vs Edad
+```{r}
+P3 <- datos %>%
+  group_by(Age)%>%
+  ggplot(mapping = aes(x= Age,y= Service.time)) + 
+  geom_point()+ geom_smooth(method = 'lm') + 
+  labs(title='Analysis of Service time across Age',x='Age',y='Service time')
+
+P3 %>% plotly::ggplotly()
+```
 
 
 
+## Column 2 {data-width=500 .tabset}
+### Razones de ausencia 
+
+```{r}
+a1 <- datos %>%
+  group_by(Reason.for.absence)%>%
+  ggplot(mapping = aes(x = fct_rev(fct_infreq(Reason.for.absence))))+
+  geom_bar(aes(y = (..count..)/sum(..count..)), fill = turbo(n=28)) + 
+  scale_y_continuous(labels = scales::percent) +
+  coord_flip()+
+  labs(x = "Causas de ausencia", y = "Porcentaje")
+a1 %>% plotly::ggplotly()
+            
+```
+
+### Meses de ausencia 
+
+```{r}
+a2 <- datos %>%
+  group_by(Month.of.absence)%>%
+  count()%>%
+  ggplot(mapping = aes(x = fct_infreq(Month.of.absence)))+
+  geom_bar(aes(y = (..count..)/sum(..count..)), fill = turbo(n=13)) + 
+  scale_y_continuous(labels = scales::percent)+
+  labs(x = "Meses", y = "Porcentaje de ausencia")
+
+a2 %>% plotly::ggplotly()
+            
+```
+### Días de ausencia 
+
+```{r}
+a3 <- datos %>%
+  group_by(Day.of.the.week)%>%
+  count()%>%
+  ggplot(mapping = aes(x = fct_infreq(Day.of.the.week)))+
+  geom_bar(aes(y = (..count..)/sum(..count..)), fill = turbo(n=5)) + 
+  scale_y_continuous(labels = scales::percent)+
+  labs(x = "Meses", y = "Porcentaje de ausencia")
+
+a3 %>% plotly::ggplotly()
+            
+```
+
+### Temporadas 
+
+```{r}
+a4 <- datos %>%
+  group_by(Seasons)%>%
+  count()%>%
+  ggplot(mapping = aes(x = fct_infreq(Seasons)))+
+  geom_bar(aes(y = (..count..)/sum(..count..)), fill = turbo(n=4)) + 
+  scale_y_continuous(labels = scales::percent)+
+  labs(x = "Temporadas", y = "Porcentaje de ausencia")
+
+a4 %>% plotly::ggplotly()
+            
+```
+### Educación 
+
+```{r}
+a5 <- datos %>%
+  group_by(Education)%>%
+  count()%>%
+  ggplot(mapping = aes(x = fct_infreq(Education)))+
+  geom_bar(aes(y = (..count..)/sum(..count..)), fill = turbo(n=4)) + 
+  scale_y_continuous(labels = scales::percent)+
+  labs(x = "Educación", y = "Porcentaje de ausencia")
+
+a5 %>% plotly::ggplotly()
+            
+```
+### Hijos 
+
+```{r}
+a5 <- datos %>%
+  group_by(Son)%>%
+  count()%>%
+  ggplot(mapping = aes(x = fct_infreq(Son)))+
+  geom_bar(aes(y = (..count..)/sum(..count..)), fill = turbo(n=5)) + 
+  scale_y_continuous(labels = scales::percent)+
+  labs(x = "Temporadas", y = "Porcentaje de ausencia")
+
+a5 %>% plotly::ggplotly()
+            
+```
 
 
-################APLICACIÓN DEL PCA AL DATA SET################
-pcs <- prcomp(na.omit(df[,-c(1)]))
-summary(pcs)
+### Bebedor social 
 
-#Los primeros 5 componentes representan más del 97% de la variación total asociada con las 20 variables originales. Esto sugiere que podemos capturar la mayor parte de la variabilidad en los datos con el 25% de las dimensiones originales en los datos. De hecho, los tres primeros componentes principales captan por sí solos el 92.23% de la variación total. Sin embargo, estos resultados están influenciados por las escalas de las variables.
+```{r}
+a6 <- datos %>%
+  group_by(Social.drinker)%>%
+  count()%>%
+  ggplot(mapping = aes(x = fct_infreq(Social.drinker)))+
+  geom_bar(aes(y = (..count..)/sum(..count..)), fill = turbo(n=2)) + 
+  scale_y_continuous(labels = scales::percent)+
+  labs(x = "Bebedor", y = "Porcentaje de ausencia")
 
+a6 %>% plotly::ggplotly()
+            
+```
+
+### Fumador social 
+
+```{r}
+a7 <- datos %>%
+  group_by(Social.smoker)%>%
+  count()%>%
+  ggplot(mapping = aes(x = fct_infreq(Social.smoker)))+
+  geom_bar(aes(y = (..count..)/sum(..count..)), fill = turbo(n=2)) + 
+  scale_y_continuous(labels = scales::percent)+
+  labs(x = "Bebedor", y = "Porcentaje de ausencia")
+
+a7 %>% plotly::ggplotly()
+            
+```
+
+
+### Mascotas 
+
+```{r}
+a8 <- ggplot(datos, aes(x = Pet, fill = Pet)) + 
+  geom_bar()+
+  labs(y = "Conteo", x = "Numero de mascotas")+
+  scale_fill_manual(values = c(turbo(n=6)))
+
+
+a8 %>% plotly::ggplotly()
+```
+### Análisis 
+<div class="box">
+Se observa que muchos de los empleados consumen alcohol, entonces, 
+¿es un valor que puede influir en la variable obetivo?
+
+Se desarrollorá un gráfico que compare un poco más a detalle
+
+</div>
+
+### Mascotas 
+
+```{r}
+p <- datos %>%
+  group_by(Age)%>%
+  count()%>%
+  ggplot(mapping = aes(x = Age, y = Absenteeism.time.in.hours, fill= Social.drinker))+
+  geom_bar(stat='identity',position= position_dodge()) + 
+      scale_x_continuous(breaks =c(seq(20,60,5)),limits=c(20,60))+
+  labs(y = "Tiempo de abstenencia en horas", x = "Edad",)+
+  guides(fill = guide_legend(title = "Bebedor social"))+
+  scale_fill_manual(values = c(turbo(n=2)))
+
+p %>% plotly::ggplotly()
+```
 
