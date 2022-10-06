@@ -35,8 +35,13 @@ df <- read.csv('C:\\Users\\eduar\\OneDrive - Instituto Tecnologico y de Estudios
 ##tradicional
 round(cor(df),2)
 #con libreria
-mydata.rcorr = rcorr(as.matrix(df)) 
+datacorr <- df %>%
+  select(-ID) %>%
+  select(-Absenteeism.time.in.hours)
+
+mydata.rcorr = rcorr(as.matrix(datacorr)) 
 mydata.coeff = mydata.rcorr$r #correlación
+mydata.cov = cov(datacorr)
 mydata.p = mydata.rcorr$P   #valor p
 
 ```
@@ -158,17 +163,23 @@ datatable(statss.df, class = 'cell-border stripe')%>%
 
 #Matriz de correlación con corrplot
 
-corrplot(mydata.coeff, 
-         order = 'AOE',
-         col = COL2('RdYlBu'),
-         type = 'lower', 
-         tl.col = "black", 
-         cl.ratio = 0.2,
-         tl.srt = 50, 
-         bg = "White", 
-         tl.cex = 0.80,diag = FALSE
-         )
+oldp <- par(cex=.30)
+pmc <- corrplot(mydata.coeff, type = 'lower',
+                p.mat = mydata.p, 
+                insig = "p-value",
+                order = "hclust", 
+                sig.level = 0.005,
+                col = COL2('RdYlBu'),
+                tl.col = "black", 
+                cl.ratio = 0.2,
+                tl.srt = 50,
+                bg = "White",
+                diag = FALSE
+                ) 
+
+par(oldp) 
 ```
+
 
 ### Heatpoint
 
@@ -238,7 +249,7 @@ a1 <- datos %>%
   geom_bar(aes(y = (..count..)/sum(..count..)), fill = turbo(n=28)) + 
   scale_y_continuous(labels = scales::percent) +
   coord_flip()+
-  labs(x = "Causas de ausencia", y = "Porcentaje")
+  labs(x = "Causas medicas de ausencia", y = "Porcentaje")
 a1 %>% plotly::ggplotly()
             
 ```
@@ -346,6 +357,19 @@ a7 %>% plotly::ggplotly()
             
 ```
 
+### Bebedores y Fumadores social 
+```{r}
+a6.7 <- ggplot(datos, aes(x =  Social.smoker, fill =  Social.drinker)) + 
+  geom_bar()+
+  scale_fill_manual(values = c(mako(n=4)))+
+  ylab("Conteo")+
+  xlab("Fumadores")+
+  guides(fill = guide_legend(title = "Bebedores sociales"))
+
+
+a6.7  %>% plotly::ggplotly()
+```
+
 
 ### Mascotas 
 
@@ -360,14 +384,32 @@ a8 %>% plotly::ggplotly()
 ```
 ### Análisis 
 <div class="box">
-Se observa que muchos de los empleados consumen alcohol, entonces, 
-¿es un valor que puede influir en la variable obetivo?
+Las cuatro primeras variables de enfermedades de ausencia cubren el 50% de las razones de ausencia.
+medical consultation, dental consultation, physiotherapy, isease of genitourinary system.
 
-Se desarrollorá un gráfico que compare un poco más a detalle
+En cuanto a los meses con mayor ausencia, no parece haber realmente un mes más notorio o explicativo. Al igual que los días de la semana y las temporadas.
 
+Con respecto a la educación, existe más del 80% de ausentismo en aquellas personas que tienen una educación de bachillerato.
+
+Tener más hijos tampoco parece estar relacionado positivamente con las faltas, ya que los que no tienen hijos son los que más faltan y las faltas se reducen a medida que se tienen más hijos. No se sabe si este fenomeno se da debido a que existen menos peronas con 4, 3 y 2 hijos.
+
+Por otro lado, los fumadores y bebedores.Existen 400 que no fuman y que si beben, y existen 286 que no fuman y no beben con faltas. 686 gentes que no fuman. Entonces se podría decir que no hay relación significativa entre los vicios con las faltas
+
+No se ve relación entre gente con mascotas y faltas.
+
+
+Entonces, ¿existe relación entre los bebedores y las edades?
+En el siguiente gráfio se presenta este fenomeno, en el que se muestra a la gente de 
+-33 años que si beben con 104 horas
+-28 años que no beben con 112 horas
+-34 años que si beben con 120 horas
+-50 años que si beben con 120 horas
+-58 años que no beben con 120 horas
+
+Parece que tiene que ver más con la edad que con el beber.
 </div>
 
-### Mascotas 
+### Edad y bebedores 
 
 ```{r}
 p <- datos %>%
@@ -376,10 +418,200 @@ p <- datos %>%
   ggplot(mapping = aes(x = Age, y = Absenteeism.time.in.hours, fill= Social.drinker))+
   geom_bar(stat='identity',position= position_dodge()) + 
       scale_x_continuous(breaks =c(seq(20,60,5)),limits=c(20,60))+
-  labs(y = "Tiempo de abstenencia en horas", x = "Edad",)+
+  labs(y = "Tiempo de absentismo en horas", x = "Edad",)+
   guides(fill = guide_legend(title = "Bebedor social"))+
   scale_fill_manual(values = c(turbo(n=2)))
 
 p %>% plotly::ggplotly()
+```
+
+
+# PCA
+## Column 1 {data-width=500 .tabset}
+### Matriz var
+
+```{r}
+
+datatable(mydata.cov, class = 'cell-border stripe')%>%
+  formatRound(
+    columns = 1:19,
+    digits = 3
+)
+
+```
+### Matriz Cov
+```{r}
+datatable(mydata.coeff, class = 'cell-border stripe')%>%
+  formatRound(
+    columns = 1:19,
+    digits = 3
+)
+
+```
+### Matriz p-valores
+```{r}
+datatable(mydata.p, class = 'cell-border stripe')%>%
+  formatRound(
+    columns = 1:19,
+    digits = 3
+)
+
+```
+
+### PCA
+```{css, echo=FALSE}
+pre {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 100px;
+}
+```
+
+```{r}
+df$Work.load.Average.day <- as.numeric(as.character(df$Work.load.Average.day ))
+datospca <- df %>%
+  select(-ID) %>%
+  select(-Absenteeism.time.in.hours)
+
+datospca = select_if(datospca, is.numeric)
+acp <- prcomp(datospca, 
+              center = TRUE,
+              scale = TRUE)
+
+if (1 + 1 == 2) {
+  # of course that is true
+  print(acp)
+  # we just printed a lengthy data set
+}
+
+```
+### PCA
+```{css, echo=FALSE}
+pre {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 100px;
+}
+```
+```{r}
+df$Work.load.Average.day <- as.numeric(as.character(df$Work.load.Average.day ))
+datospca <- df %>%
+  select(-ID) %>%
+  select(-Absenteeism.time.in.hours)
+datospca <- scale(datospca)  
+
+
+if (1 + 1 == 2) {
+  # of course that is true
+  print(datospca)
+  # we just printed a lengthy data set
+}
+
+```
+
+### DATOS PCAPLI
+```{css, echo=FALSE}
+pre {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 100px;
+}
+```
+```{r}
+
+pcaaplicacion <- PCA(datospca,graph = F)
+
+if (1 + 1 == 2) {
+  # of course that is true
+  print(pcaaplicacion)
+  # we just printed a lengthy data set
+}
+
+```
+
+
+### Egevalor
+```{css, echo=FALSE}
+pre {
+  max-height: 500px;
+  overflow-y: auto;
+}
+
+pre[class] {
+  max-height: 100px;
+}
+```
+```{r}
+
+egevalor <- get_eigenvalue(pcaaplicacion)
+
+
+if (1 + 1 == 2) {
+  # of course that is true
+  print(egevalor)
+  # we just printed a lengthy data set
+}
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Column 2 {data-width=500 .tabset}
+### Plots
+
+```{r results = FALSE}
+
+
+plot(acp, type = "l")
+
+biplot(acp, scale = 0)
+```
+
+```{r results = FALSE}
+
+
+fviz_eig(pcaaplicacion,addlabels=T)
+fviz_pca_var(pcaaplicacion,col.var='red')
+fviz_cos2(pcaaplicacion,choice='var',axes=1:2)
+```
+
+```{r}
+
 ```
 
