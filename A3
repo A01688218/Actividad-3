@@ -458,137 +458,192 @@ datatable(mydata.p, class = 'cell-border stripe')%>%
 
 ```
 
-### PCA
+### PCA `PCA`
 ```{css, echo=FALSE}
 pre {
-  max-height: 500px;
+  max-height: 50%;
   overflow-y: auto;
 }
 
 pre[class] {
-  max-height: 100px;
+  max-height: 50%;
 }
 ```
-
+<h3>Datos escalados</h3>
 ```{r}
+
 df$Work.load.Average.day <- as.numeric(as.character(df$Work.load.Average.day ))
+
+
 datospca <- df %>%
   select(-ID) %>%
   select(-Absenteeism.time.in.hours)
+  
+  
+datospca <- scale(datospca)
 
-datospca = select_if(datospca, is.numeric)
-acp <- prcomp(datospca, 
-              center = TRUE,
-              scale = TRUE)
 
 if (1 + 1 == 2) {
   # of course that is true
-  print(acp)
+  datatable(datospca, class = 'cell-border stripe')%>%
+  formatRound(columns = 19,
+    digits = 3
+)
   # we just printed a lengthy data set
 }
 
 ```
 
-```{css, echo=FALSE, results = FALSE}
-pre {
-  max-height: 500px;
-  overflow-y: auto;
-}
 
-pre[class] {
-  max-height: 100px;
-}
-```
+
+<h3>Eigenvalores. Porcentaje de variación acumulada </h3>
 ```{r}
-df$Work.load.Average.day <- as.numeric(as.character(df$Work.load.Average.day ))
-datospca <- df %>%
-  select(-ID) %>%
-  select(-Absenteeism.time.in.hours)
-datospca <- scale(datospca)  
+ppca <- PCA(datospca,graph = F)
 
+eig.val <- get_eigenvalue(ppca)
 
 if (1 + 1 == 2) {
   # of course that is true
-  print(datospca)
+  eig.val
   # we just printed a lengthy data set
 }
-
 ```
 
 
-```{css, echo=FALSE, results = FALSE}
-pre {
-  max-height: 500px;
-  overflow-y: auto;
-}
+### Eigenvalores `$eig`
+<body>
+Con estos datos se empezarán a construir las grafias de la columna 2.
+</body>
 
-pre[class] {
-  max-height: 100px;
-}
-```
-```{r}
-
-pcaaplicacion <- PCA(datospca,graph = F)
-
-if (1 + 1 == 2) {
-  # of course that is true
-  print(pcaaplicacion)
-  # we just printed a lengthy data set
-}
-
-```
-
-
-### Eigenvalores
 ```{css, echo=FALSE}
 pre {
-  max-height: 500px;
+  max-height: 100%;
   overflow-y: auto;
 }
 
 pre[class] {
-  max-height: 100px;
+  max-height: 100%;
 }
 ```
+
 ```{r}
+ppca$eig
+```
+<body>
+Como se puede ver en los datos, tenemos que con al menos 10 variables se puede explicar la variabilidad del porque la ausencia en el trabajo. En el grafico de la columna de la derecha llamada "Eigenvalores" se aprecia visualmente estos datos.
 
-egevalor <- get_eigenvalue(pcaaplicacion)
+NOTA: En sesión el doctor especifico que no se deben de usar variables categoricas, sin embargo al dejar estas de lado se esta perdiendo gran información. La función <code>&lt;PCA()&gt;</code> permite utilizar variables categoricas suplementarias.
+</body>
+
+### Correlación entre variables y PCs `$eig`
 
 
-if (1 + 1 == 2) {
-  # of course that is true
-  print(egevalor)
-  # we just printed a lengthy data set
+```{css, echo=FALSE}
+pre {
+  max-height: 100%;
+  overflow-y: auto;
 }
 
+pre[class] {
+  max-height: 100%;
+}
 ```
 
+```{r}
+ppca$var$coord
+```
+<body>
+En la columna derecha tenemos una matriz grafica y un gráfico de barras llamado cos2 
+Para el caso de la matriz que nos dejan identificar en dodne se encuentra el valor con mayores pesos (negativos y positivos). 
+Para el caso de la gráfica, muestra la importancia de un componente principal para una observación dada (vector de variables originales).
 
 
+</body>
 
 
 
 
 ## Column 2 {data-width=500 .tabset}
-### Plots
 
-```{r results = FALSE}
-
-
-plot(acp, type = "l")
-
-biplot(acp, scale = 0)
-```
-
-```{r results = FALSE}
-
-
-fviz_eig(pcaaplicacion,addlabels=T)
-fviz_pca_var(pcaaplicacion,col.var='red')
-fviz_cos2(pcaaplicacion,choice='var',axes=1:2)
-```
-
+### Eigenvalores
 ```{r}
+fviz_eig(ppca,addlabels=T)
+```
+
+
+### Matriz Correlación variables y Dim
+```{r}
+var <- get_pca_var(ppca)
+
+
+
+corrplot(var$cos2, type = 'full',is.corr=FALSE,
+         sig.level = 0.005,
+         cl.pos = 'r',
+                col = COL2('RdYlBu'),
+                tl.col = "black", 
+                cl.ratio = 0.2,
+                tl.srt = 50,
+                bg = "White",
+                diag = FALSE
+                ) 
 
 ```
 
+### Cos2 de las variables
+
+```{r results = FALSE}
+fviz_cos2(ppca,choice='var',axes=1:2)
+```
+
+
+### Correlación de variables
+```{r, fig.align='center'}
+fviz_pca_var(ppca,arrowsize = 1, labelsize = 3, repel = TRUE, col.var = "contrib", gradient.cols = turbo(n=20))
+```
+<body> La correlación entre una variable y un componente principal (PC) se utiliza como las coordenadas de la variable en el PC. 
+La representación de las variables difiere del gráfico de las observaciones: las observaciones están representadas por sus proyecciones, pero las variables están representadas por sus correlaciones (Abdi y Williams 2010).
+
+El gráfico  también se conoce como gráfico de correlación de variables. Muestra las relaciones entre todas las variables. Se puede interpretar de la siguiente manera:
+
+* Las variables correlacionadas positivamente se agrupan.
+* Las variables correlacionadas negativamente se colocan en lados opuestos del origen del gráfico (cuadrantes opuestos).
+* La distancia entre las variables y el origen mide la calidad de las variables en el mapa de factores. Las variables que están alejadas del origen están bien representadas en el mapa de factores.
+</body>
+
+
+### Contribuciones de las variables
+
+<body>
+Las contribuciones de las variables para explicar la variabilidad en un componente principal dado se expresan en porcentaje.
+
+* Las variables que están correlacionadas con PC1 (es decir, Dim.1) y PC2 (es decir, Dim.2) son las más importantes para explicar la variabilidad en el conjunto de datos.
+* Las variables que no se correlacionan con ningún PC o se correlacionan con las últimas dimensiones son variables de baja contribución y podrían eliminarse para simplificar el análisis general.
+
+La contribución de las variables se puede extraer como se muestran en los siguientes gráficos
+</body>
+
+### Contribuciones de las variables a DIM1
+```{r}
+fviz_contrib(ppca,choice='var',axes=1)
+```
+
+### Contribución de las variables a DIM2
+```{r}
+fviz_contrib(ppca,choice='var',axes=2)
+```
+
+### Contribución de las variables a DIM3
+```{r}
+fviz_contrib(ppca,choice='var',axes=3)
+```
+
+### Contribución de las variables a DIM4
+```{r}
+fviz_contrib(ppca,choice='var',axes=4)
+```
+
+### Contribución de las variables a DIM5
+```{r}
+fviz_contrib(ppca,choice='var',axes=5)
+```
